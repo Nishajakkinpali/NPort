@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>N-Port Viewer</title>
+    <style>
+      /* UI: button, table */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+      }
+      input, button {
+        font-size: 16px;
+        padding: 6px;
+        margin-right: 10px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      th {
+        background-color: #f0f0f0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Prospect Capital N-Port Viewer</h1>
+    <p>Enter a fund CIK to fetch its latest N-Port holdings.</p>
+
+    <!-- Lets users input CIK -->
+    <input id="cikInput" placeholder="e.g. 0000884394 for SPY" />
+    <button id="fetchButton">Fetch Holdings</button>
+
+    <!-- A placeholder for messages (like errors or success) -->
+    <p id="message"></p>
+
+    <!-- Table to show holdings -->
+    <table id="holdingsTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>CUSIP</th>
+          <th>Title/Name</th>
+          <th>Balance</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+      // Get references to elements
+      const button = document.getElementById("fetchButton");
+      const message = document.getElementById("message");
+      const table = document.getElementById("holdingsTable");
+      const tbody = document.getElementById("tableBody");
+
+      // So button clicks
+      button.addEventListener("click", async () => {
+        const cik = document.getElementById("cikInput").value.trim();
+
+        // Reset message and table
+        message.textContent = "";
+        table.style.display = "none";
+        tbody.innerHTML = "";
+
+        // CIK can only be a number, if not error handling
+        if (!/^[0-9]{1,10}$/.test(cik)) {
+          message.textContent = "Please enter a valid numeric CIK (10 digits).";
+          return;
+        }
+
+        // Fetch from our backend API
+        try {
+          const response = await fetch(`/api/holdings?cik=${cik}`);
+            if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            message.textContent = err.detail || `Error ${response.status}`;
+            return;
+            }
+
+
+          const data = await response.json();
+
+          // If no holdings, display message
+          if (!data.holdings || data.holdings.length === 0) {
+            message.textContent = "No holdings found for this fund.";
+            return;
+          }
+
+          // Show table and fill it with data
+          table.style.display = "table";
+          for (const row of data.holdings) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${row.cusip || ""}</td>
+              <td>${row.title || ""}</td>
+              <td>${row.balance || ""}</td>
+              <td>${row.value || ""}</td>
+            `;
+            tbody.appendChild(tr);
+          }
+
+          message.textContent = `Showing ${data.holdings.length} holdings for CIK ${data.cik}`;
+        } catch (err) {
+          message.textContent = "Network error. Please try again.";
+        }
+      });
+    </script>
+  </body>
+</html>
