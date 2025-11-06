@@ -18,5 +18,4 @@ You can enter any fund’s CIK number, and the app will get the most recent N-PO
 6. Run the FastAPI server
    ```bash
    uvicorn backend:app --reload
-```bash
 Go to http://127.0.0.1:8000/
